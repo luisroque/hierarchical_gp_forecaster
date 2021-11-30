@@ -4,12 +4,12 @@ import gpytorch
 from .gp import ExactGPModel
 from .mean_functions import PiecewiseLinearMean
 from gpytorch.mlls import SumMarginalLogLikelihood
-from hgp.results.calculate_metrics import calculate_metrics
+from gpforecaster.results.calculate_metrics import calculate_metrics
 import pickle
 import tsaugmentation as tsag
 
 
-class HGP:
+class GPF:
 
     def __init__(self, dataset, groups):
         self.dataset = dataset
