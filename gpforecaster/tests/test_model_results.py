@@ -10,9 +10,12 @@ class TestModel(unittest.TestCase):
         self.data = tsag.preprocessing.PreprocessDatasets('prison').apply_preprocess()
         self.n = self.data['predict']['n']
         self.s = self.data['train']['s']
-        shutil.rmtree("./original_datasets")
-        shutil.rmtree("./transformed_datasets")
+        shutil.rmtree("./data/original_datasets")
         self.gpf = GPF('prison', self.data)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree("./results")
 
     def test_correct_train(self):
         model, like = self.gpf.train(n_iterations=10)

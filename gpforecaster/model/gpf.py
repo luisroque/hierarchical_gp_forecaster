@@ -7,19 +7,26 @@ from gpytorch.mlls import SumMarginalLogLikelihood
 from gpforecaster.results.calculate_metrics import calculate_metrics
 import pickle
 import tsaugmentation as tsag
+from pathlib import Path
 
 
 class GPF:
 
-    def __init__(self, dataset, groups):
+    def __init__(self, dataset, groups, input_dir='./'):
         self.dataset = dataset
         self.groups = groups
+        self.input_dir = input_dir
         self.groups, self.dt = self._preprocess()
+        self._create_directories()
 
         self.train_x = torch.arange(groups['train']['n'])
         self.train_x = self.train_x.type(torch.DoubleTensor)
         self.train_x = self.train_x.unsqueeze(-1)
         self.train_y = torch.from_numpy(groups['train']['data'])
+
+    def _create_directories(self):
+        # Create directory to store results if does not exist
+        Path(f'{self.input_dir}results').mkdir(parents=True, exist_ok=True)
 
     def _preprocess(self):
         dt = tsag.preprocessing.utils.DataTransform(self.groups)
