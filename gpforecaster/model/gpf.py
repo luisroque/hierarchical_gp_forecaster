@@ -173,7 +173,7 @@ class GPF:
         return mean, lower, upper
 
     def store_metrics(self, res):
-        with open(f'results_gp_cov_{self.dataset}.pickle', 'wb') as handle:
+        with open(f'{self.input_dir}results/results_gp_cov_{self.dataset}.pickle', 'wb') as handle:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
     def metrics(self, mean):
