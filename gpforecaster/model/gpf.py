@@ -156,7 +156,9 @@ class GPF:
         upper = np.zeros((1, self.groups['predict']['n'], self.groups['predict']['s']))
         for pred in predictions:
             mean[:, :, i] = pred.mean
-            lower[:, :, i], upper[:, :, i] = pred.confidence_region()
+            conf = pred.confidence_region()
+            lower[:, :, i] = conf[0].detach().numpy()
+            upper[:, :, i] = conf[1].detach().numpy()
             i += 1
 
         # transform back the data
