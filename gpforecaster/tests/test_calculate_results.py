@@ -1,6 +1,7 @@
 import unittest
-from gpforecaster.model.gpf import GPF
+from gpforecaster.results.calculate_metrics import CalculateStoreResults
 import tsaugmentation as tsag
+from gpforecaster.model.gpf import GPF
 import shutil
 
 
@@ -17,17 +18,9 @@ class TestModel(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree("./results")
 
-    def test_correct_train(self):
-        model, like = self.gpf.train(n_iterations=10)
-        self.assertIsNotNone(model)
-
-    def test_predict_shape(self):
+    def test_calculate_metrics_dict(self):
         model, like = self.gpf.train(n_iterations=10)
         mean, lower, upper = self.gpf.predict(model, like)
-        self.assertTrue(mean.shape == (1, self.n, self.s))
-
-    def test_results_interval(self):
-        model, like = self.gpf.train(n_iterations=10)
-        mean, lower, upper = self.gpf.predict(model, like)
-        res = self.gpf.metrics(mean)
-        self.assertLess(res['mase']['bottom'], 2.5)
+        calc_res = CalculateStoreResults(pred_samples=mean, groups=self.data)
+        error_dict = calc_res.calculate_metrics()
+        print(error_dict)

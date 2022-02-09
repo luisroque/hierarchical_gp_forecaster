@@ -4,7 +4,7 @@ import gpytorch
 from .gp import ExactGPModel
 from .mean_functions import PiecewiseLinearMean
 from gpytorch.mlls import SumMarginalLogLikelihood
-from gpforecaster.results.calculate_metrics import calculate_metrics
+from gpforecaster.results.calculate_metrics import CalculateStoreResults
 import pickle
 import tsaugmentation as tsag
 from pathlib import Path
@@ -179,6 +179,7 @@ class GPF:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
     def metrics(self, mean):
-        res = calculate_metrics(mean, self.groups)
+        calc_results = CalculateStoreResults(mean, self.groups)
+        res = calc_results.calculate_metrics()
         return res
 
