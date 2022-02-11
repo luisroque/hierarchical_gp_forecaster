@@ -4,10 +4,11 @@ import gpytorch
 from .gp import ExactGPModel
 from .mean_functions import PiecewiseLinearMean
 from gpytorch.mlls import SumMarginalLogLikelihood
-from gpforecaster.results.calculate_metrics import calculate_metrics
+from gpforecaster.results.calculate_metrics import CalculateStoreResults
 import pickle
 import tsaugmentation as tsag
 from pathlib import Path
+import time
 
 
 class GPF:
@@ -16,6 +17,12 @@ class GPF:
         self.dataset = dataset
         self.groups = groups
         self.input_dir = input_dir
+        self.timer_start = time.time()
+        self.wall_time_preprocess = None
+        self.wall_time_build_model = None
+        self.wall_time_train = None
+        self.wall_time_predict = None
+        self.wall_time_total = None
         self.groups, self.dt = self._preprocess()
         self._create_directories()
 
@@ -30,6 +37,7 @@ class GPF:
 
     def _preprocess(self):
         dt = tsag.preprocessing.utils.DataTransform(self.groups)
+        self.wall_time_preprocess = time.time() - self.timer_start
         return dt.std_transf_train(), dt
 
     def _build_mixtures(self):
@@ -113,6 +121,7 @@ class GPF:
             likelihood_list.append(gpytorch.likelihoods.GaussianLikelihood())
             model_list.append(ExactGPModel(self.train_x, self.train_y[:, i], likelihood_list[i], mixed_covs[i], changepoints, PiecewiseLinearMean))
 
+        self.wall_time_build_model = time.time() - self.wall_time_preprocess
         return likelihood_list, model_list
 
     def train(self, n_iterations=500, lr=1e-3):
@@ -138,6 +147,7 @@ class GPF:
             print('Iter %d/%d - Loss: %.3f' % (i + 1, n_iterations, loss.item()))
             optimizer.step()
 
+        self.wall_time_train = time.time() - self.wall_time_build_model
         return model, likelihood
 
     def predict(self, model, likelihood):
@@ -172,6 +182,7 @@ class GPF:
         lower[lower < 0] = 0
         upper[upper < 0] = 0
 
+        self.wall_time_predict = time.time() - self.wall_time_train
         return mean, lower, upper
 
     def store_metrics(self, res):
@@ -179,6 +190,16 @@ class GPF:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
     def metrics(self, mean):
-        res = calculate_metrics(mean, self.groups)
+        calc_results = CalculateStoreResults(mean, self.groups)
+        res = calc_results.calculate_metrics()
+        self.wall_time_total = time.time() - self.wall_time_predict
+
+        res['wall_time'] = {}
+        res['wall_time']['wall_time_preprocess'] = self.wall_time_preprocess
+        res['wall_time']['wall_time_build_model'] = self.wall_time_build_model
+        res['wall_time']['wall_time_train'] = self.wall_time_train
+        res['wall_time']['wall_time_predict'] = self.wall_time_predict
+        res['wall_time']['wall_time_total'] = self.wall_time_total
+
         return res
 
