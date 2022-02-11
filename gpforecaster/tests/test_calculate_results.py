@@ -21,6 +21,6 @@ class TestModel(unittest.TestCase):
     def test_calculate_metrics_dict(self):
         model, like = self.gpf.train(n_iterations=100)
         mean, lower, upper = self.gpf.predict(model, like)
-        calc_res = CalculateStoreResults(pred_samples=mean, groups=self.data)
-        error_dict = calc_res.calculate_metrics()
-        self.assertLess(error_dict['mase']['bottom'], 2.5)
+        res = self.gpf.metrics(mean)
+        print(res)
+        self.assertLess(res['mase']['bottom'], 2.5)

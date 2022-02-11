@@ -17,6 +17,12 @@ class GPF:
         self.dataset = dataset
         self.groups = groups
         self.input_dir = input_dir
+        self.timer_start = time.time()
+        self.wall_time_preprocess = None
+        self.wall_time_build_model = None
+        self.wall_time_train = None
+        self.wall_time_predict = None
+        self.wall_time_total = None
         self.groups, self.dt = self._preprocess()
         self._create_directories()
 
@@ -24,12 +30,6 @@ class GPF:
         self.train_x = self.train_x.type(torch.DoubleTensor)
         self.train_x = self.train_x.unsqueeze(-1)
         self.train_y = torch.from_numpy(groups['train']['data'])
-        self.timer_start = time.time()
-        self.wall_time_preprocess = None
-        self.wall_time_build_model = None
-        self.wall_time_train = None
-        self.wall_time_predict = None
-        self.wall_time_total = None
 
     def _create_directories(self):
         # Create directory to store results if does not exist
@@ -195,10 +195,11 @@ class GPF:
         self.wall_time_total = time.time() - self.wall_time_predict
 
         res['wall_time'] = {}
-        res['wall_time_preprocess'] = self.wall_time_preprocess
-        res['wall_time_build_model'] = self.wall_time_build_model
-        res['wall_time_train'] = self.wall_time_train
-        res['wall_time_predict'] = self.wall_time_predict
-        res['wall_time_total'] = self.wall_time_total
+        res['wall_time']['wall_time_preprocess'] = self.wall_time_preprocess
+        res['wall_time']['wall_time_build_model'] = self.wall_time_build_model
+        res['wall_time']['wall_time_train'] = self.wall_time_train
+        res['wall_time']['wall_time_predict'] = self.wall_time_predict
+        res['wall_time']['wall_time_total'] = self.wall_time_total
+
         return res
 
