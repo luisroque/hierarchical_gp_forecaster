@@ -8,6 +8,7 @@ from gpforecaster.results.calculate_metrics import CalculateStoreResults
 import pickle
 import tsaugmentation as tsag
 from pathlib import Path
+import time
 
 
 class GPF:
@@ -23,6 +24,12 @@ class GPF:
         self.train_x = self.train_x.type(torch.DoubleTensor)
         self.train_x = self.train_x.unsqueeze(-1)
         self.train_y = torch.from_numpy(groups['train']['data'])
+        self.timer_start = time.time()
+        self.wall_time_preprocess = None
+        self.wall_time_build_model = None
+        self.wall_time_train = None
+        self.wall_time_predict = None
+        self.wall_time_total = None
 
     def _create_directories(self):
         # Create directory to store results if does not exist
@@ -30,6 +37,7 @@ class GPF:
 
     def _preprocess(self):
         dt = tsag.preprocessing.utils.DataTransform(self.groups)
+        self.wall_time_preprocess = time.time() - self.timer_start
         return dt.std_transf_train(), dt
 
     def _build_mixtures(self):
@@ -113,6 +121,7 @@ class GPF:
             likelihood_list.append(gpytorch.likelihoods.GaussianLikelihood())
             model_list.append(ExactGPModel(self.train_x, self.train_y[:, i], likelihood_list[i], mixed_covs[i], changepoints, PiecewiseLinearMean))
 
+        self.wall_time_build_model = time.time() - self.wall_time_preprocess
         return likelihood_list, model_list
 
     def train(self, n_iterations=500, lr=1e-3):
@@ -138,6 +147,7 @@ class GPF:
             print('Iter %d/%d - Loss: %.3f' % (i + 1, n_iterations, loss.item()))
             optimizer.step()
 
+        self.wall_time_train = time.time() - self.wall_time_build_model
         return model, likelihood
 
     def predict(self, model, likelihood):
@@ -172,6 +182,7 @@ class GPF:
         lower[lower < 0] = 0
         upper[upper < 0] = 0
 
+        self.wall_time_predict = time.time() - self.wall_time_train
         return mean, lower, upper
 
     def store_metrics(self, res):
@@ -181,5 +192,13 @@ class GPF:
     def metrics(self, mean):
         calc_results = CalculateStoreResults(mean, self.groups)
         res = calc_results.calculate_metrics()
+        self.wall_time_total = time.time() - self.wall_time_predict
+
+        res['wall_time'] = {}
+        res['wall_time_preprocess'] = self.wall_time_preprocess
+        res['wall_time_build_model'] = self.wall_time_build_model
+        res['wall_time_train'] = self.wall_time_train
+        res['wall_time_predict'] = self.wall_time_predict
+        res['wall_time_total'] = self.wall_time_total
         return res
 

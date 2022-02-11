@@ -19,8 +19,8 @@ class TestModel(unittest.TestCase):
         shutil.rmtree("./results")
 
     def test_calculate_metrics_dict(self):
-        model, like = self.gpf.train(n_iterations=10)
+        model, like = self.gpf.train(n_iterations=100)
         mean, lower, upper = self.gpf.predict(model, like)
         calc_res = CalculateStoreResults(pred_samples=mean, groups=self.data)
         error_dict = calc_res.calculate_metrics()
-        print(error_dict)
+        self.assertLess(error_dict['mase']['bottom'], 2.5)
