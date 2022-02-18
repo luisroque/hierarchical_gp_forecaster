@@ -1,4 +1,4 @@
-__version__ = "0.1.5"
+__version__ = "0.1.7"
 
 from gpforecaster import model
 from gpforecaster import results
