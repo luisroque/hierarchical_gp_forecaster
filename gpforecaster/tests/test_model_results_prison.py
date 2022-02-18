@@ -31,3 +31,9 @@ class TestModel(unittest.TestCase):
         mean, lower, upper = self.gpf.predict(model, like)
         res = self.gpf.metrics(mean)
         self.assertLess(res['mase']['bottom'], 2.5)
+
+    def test_wall_time(self):
+        model, like = self.gpf.train(n_iterations=10)
+        mean, lower, upper = self.gpf.predict(model, like)
+        res = self.gpf.metrics(mean)
+        self.assertLess(res['wall_time']['wall_time_total'], 100)
