@@ -79,7 +79,7 @@ class GPF:
 
             # Periodic Kernel
             periodic_kernel = gpytorch.kernels.PeriodicKernel()
-            periodic_kernel.period_length = torch.tensor([12])
+            periodic_kernel.period_length = torch.tensor([self.groups['seasonality']])
             periodic_kernel.lengthscale = torch.tensor([0.5])
             scale_periodic_kernel = gpytorch.kernels.ScaleKernel(periodic_kernel)
             scale_periodic_kernel.outputscale = torch.tensor([1.5])
