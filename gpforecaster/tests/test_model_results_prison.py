@@ -27,7 +27,7 @@ class TestModel(unittest.TestCase):
         self.assertTrue(mean.shape == (1, self.n, self.s))
 
     def test_results_interval(self):
-        model, like = self.gpf.train(n_iterations=10)
+        model, like = self.gpf.train(n_iterations=100)
         mean, lower, upper = self.gpf.predict(model, like)
         res = self.gpf.metrics(mean, lower, upper)
         self.assertLess(res['mase']['bottom'], 2.5)
