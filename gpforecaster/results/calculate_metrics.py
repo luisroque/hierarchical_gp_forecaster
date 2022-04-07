@@ -8,10 +8,9 @@ class CalculateStoreResults:
     Currently we have implemented MASE and RMSE.
 
     Attributes:
-        pred_samples (array): predictions of shape [number of samples, h, number of series]
+        pred_samples (array): predictions of shape [number of samples, n, number of series]
             - we transform it immediately to the shape [h, number of series] by averaging over the samples
         groups (obj): dict containing the data and several other attributes of the dataset
-
     """
 
     def __init__(self, pred_samples, groups):

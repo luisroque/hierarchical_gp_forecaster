@@ -189,11 +189,14 @@ class GPF:
         with open(f'{self.input_dir}results/results_gp_cov_{self.dataset}.pickle', 'wb') as handle:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
-    def metrics(self, mean):
+    def metrics(self, mean, lower, upper):
         calc_results = CalculateStoreResults(mean, self.groups)
         res = calc_results.calculate_metrics()
         self.wall_time_total = time.time() - self.wall_time_predict
 
+        res['mean'] = mean
+        res['lower'] = lower
+        res['upper'] = upper
         res['wall_time'] = {}
         res['wall_time']['wall_time_preprocess'] = self.wall_time_preprocess
         res['wall_time']['wall_time_build_model'] = self.wall_time_build_model

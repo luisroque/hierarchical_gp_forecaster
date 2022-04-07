@@ -29,5 +29,5 @@ class TestModel(unittest.TestCase):
     def test_results_interval(self):
         model, like = self.gpf.train(n_iterations=10)
         mean, lower, upper = self.gpf.predict(model, like)
-        res = self.gpf.metrics(mean)
+        res = self.gpf.metrics(mean, lower, upper)
         self.assertLess(res['mase']['bottom'], 2.5)
