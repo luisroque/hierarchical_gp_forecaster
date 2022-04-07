@@ -1,5 +1,4 @@
 import unittest
-from gpforecaster.results.calculate_metrics import CalculateStoreResults
 import tsaugmentation as tsag
 from gpforecaster.model.gpf import GPF
 import shutil
@@ -21,6 +20,5 @@ class TestModel(unittest.TestCase):
     def test_calculate_metrics_dict(self):
         model, like = self.gpf.train(n_iterations=100)
         mean, lower, upper = self.gpf.predict(model, like)
-        res = self.gpf.metrics(mean)
-        print(res)
+        res = self.gpf.metrics(mean, lower, upper)
         self.assertLess(res['mase']['bottom'], 2.5)
