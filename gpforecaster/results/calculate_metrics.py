@@ -69,21 +69,25 @@ class CalculateStoreResults:
         """Aggregates the results for all the groups
 
         Returns:
-            error (obj): contains all the error metric for each individual series of each group and the average
+            error (obj): - contains all the error metric for each individual series of each group and the average
+                         - contains all the predictions for all the series and groups
 
         """
         error_metrics = dict()
         error_metrics['mase'] = {}
         error_metrics['rmse'] = {}
+        error_metrics['predictions'] = {}
 
         error_metrics = self.calculate_metrics_for_individual_group('bottom',
                                                                     self.y_f,
                                                                     self.pred_samples,
                                                                     error_metrics)
+        error_metrics['predictions']['bottom'] = self.pred_samples
         error_metrics = self.calculate_metrics_for_individual_group('total',
                                                                     np.sum(self.y_f, axis=1).reshape(-1, 1),
                                                                     np.sum(self.pred_samples, axis=1).reshape(-1, 1),
                                                                     error_metrics)
+        error_metrics['predictions']['total'] = np.sum(self.pred_samples, axis=1).reshape(-1, 1)
         # All the groups present in the data
         idx_dict_new = dict()
         for group in list(self.groups['predict']['groups_names'].keys()):
@@ -95,11 +99,13 @@ class CalculateStoreResults:
 
                 y_g[:, idx] = np.sum(idx_dict_new[name] * self.y_f, axis=1)
                 f_g[:, idx] = np.sum(idx_dict_new[name] * self.pred_samples, axis=1)
+                error_metrics['predictions'][name] = np.sum(idx_dict_new[name] * self.pred_samples, axis=1)
 
             error_metrics = self.calculate_metrics_for_individual_group(group,
                                                                         y_g,
                                                                         f_g,
                                                                         error_metrics)
+            error_metrics['predictions'][group] = np.sum(f_g, axis=1)
             list(self.groups['predict']['groups_names'].keys())
         for err in self.errs:
             error_metrics[err]['all_ind'] = np.concatenate([error_metrics[err][f'{x}_ind'] for x in

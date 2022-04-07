@@ -79,7 +79,7 @@ class GPF:
 
             # Periodic Kernel
             periodic_kernel = gpytorch.kernels.PeriodicKernel()
-            periodic_kernel.period_length = torch.tensor([12])
+            periodic_kernel.period_length = torch.tensor([self.groups['seasonality']])
             periodic_kernel.lengthscale = torch.tensor([0.5])
             scale_periodic_kernel = gpytorch.kernels.ScaleKernel(periodic_kernel)
             scale_periodic_kernel.outputscale = torch.tensor([1.5])
@@ -121,7 +121,7 @@ class GPF:
             likelihood_list.append(gpytorch.likelihoods.GaussianLikelihood())
             model_list.append(ExactGPModel(self.train_x, self.train_y[:, i], likelihood_list[i], mixed_covs[i], changepoints, PiecewiseLinearMean))
 
-        self.wall_time_build_model = time.time() - self.wall_time_preprocess
+        self.wall_time_build_model = time.time() - self.timer_start - self.wall_time_preprocess
         return likelihood_list, model_list
 
     def train(self, n_iterations=500, lr=1e-3):
@@ -147,7 +147,7 @@ class GPF:
             print('Iter %d/%d - Loss: %.3f' % (i + 1, n_iterations, loss.item()))
             optimizer.step()
 
-        self.wall_time_train = time.time() - self.wall_time_build_model
+        self.wall_time_train = time.time() - self.timer_start - self.wall_time_build_model
         return model, likelihood
 
     def predict(self, model, likelihood):
@@ -182,7 +182,7 @@ class GPF:
         lower[lower < 0] = 0
         upper[upper < 0] = 0
 
-        self.wall_time_predict = time.time() - self.wall_time_train
+        self.wall_time_predict = time.time() - self.timer_start - self.wall_time_train
         return mean, lower, upper
 
     def store_metrics(self, res):
@@ -192,7 +192,7 @@ class GPF:
     def metrics(self, mean, lower, upper):
         calc_results = CalculateStoreResults(mean, self.groups)
         res = calc_results.calculate_metrics()
-        self.wall_time_total = time.time() - self.wall_time_predict
+        self.wall_time_total = time.time() - self.timer_start
 
         res['mean'] = mean
         res['lower'] = lower
