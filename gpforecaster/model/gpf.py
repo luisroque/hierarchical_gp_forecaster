@@ -4,7 +4,7 @@ import gpytorch
 from .gp import ExactGPModel
 from .mean_functions import PiecewiseLinearMean
 from gpytorch.mlls import SumMarginalLogLikelihood
-from gpforecaster.results.calculate_metrics import CalculateStoreResults
+from gpforecaster.results.calculate_metrics import CalculateResultsBottomUp
 import pickle
 import tsaugmentation as tsag
 from pathlib import Path
@@ -13,7 +13,7 @@ import time
 
 class GPF:
 
-    def __init__(self, dataset, groups, input_dir='./'):
+    def __init__(self, dataset, groups, input_dir='./', n_samples=500):
         self.dataset = dataset
         self.groups = groups
         self.input_dir = input_dir
@@ -25,6 +25,7 @@ class GPF:
         self.wall_time_total = None
         self.groups, self.dt = self._preprocess()
         self._create_directories()
+        self.n_samples = n_samples
 
         self.train_x = torch.arange(groups['train']['n'])
         self.train_x = self.train_x.type(torch.DoubleTensor)
@@ -132,11 +133,9 @@ class GPF:
 
         mll = SumMarginalLogLikelihood(likelihood, model)
 
-        # Find optimal model hyperparameters
         model.train()
         likelihood.train()
 
-        # Use the Adam optimizer
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)  # Includes GaussianLikelihood parameters
 
         for i in range(n_iterations):
@@ -151,52 +150,41 @@ class GPF:
         return model, likelihood
 
     def predict(self, model, likelihood):
-        # Set into eval mode
         model.eval()
         likelihood.eval()
 
-        # Make predictions
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             test_x = torch.arange(self.groups['predict']['n']).type(torch.DoubleTensor)
             predictions = likelihood(*model(*[test_x for i in range(self.groups['predict']['s'])]))
 
         i = 0
-        mean = np.zeros((1, self.groups['predict']['n'], self.groups['predict']['s']))
-        lower = np.zeros((1, self.groups['predict']['n'], self.groups['predict']['s']))
-        upper = np.zeros((1, self.groups['predict']['n'], self.groups['predict']['s']))
+        samples = np.zeros((self.n_samples, self.groups['predict']['n'], self.groups['predict']['s']))
         for pred in predictions:
-            mean[:, :, i] = pred.mean
-            conf = pred.confidence_region()
-            lower[:, :, i] = conf[0].detach().numpy()
-            upper[:, :, i] = conf[1].detach().numpy()
+            samples[:, :, i] = np.random.normal(pred.mean, np.sqrt(pred.variance),
+                                                size=(self.n_samples, self.groups['predict']['n']))
             i += 1
 
+        samples = np.transpose(samples, (1, 2, 0))
+
         # transform back the data
-        mean = ((mean * self.dt.std_data) + self.dt.mu_data)
-        lower = ((lower * self.dt.std_data) + self.dt.mu_data)
-        upper = ((upper * self.dt.std_data) + self.dt.mu_data)
+        samples = ((samples * self.dt.std_data[np.newaxis, :, np.newaxis]) + self.dt.mu_data[np.newaxis, :, np.newaxis])
         self.groups = self.dt.inv_transf_train()
 
         # Clip predictions to 0 if there are negative numbers
-        mean[mean < 0] = 0
-        lower[lower < 0] = 0
-        upper[upper < 0] = 0
+        samples[samples < 0] = 0
 
         self.wall_time_predict = time.time() - self.timer_start - self.wall_time_train
-        return mean, lower, upper
+        return samples
 
     def store_metrics(self, res):
         with open(f'{self.input_dir}results/results_gp_cov_{self.dataset}.pickle', 'wb') as handle:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
-    def metrics(self, mean, lower, upper):
-        calc_results = CalculateStoreResults(mean, self.groups)
+    def metrics(self, samples):
+        calc_results = CalculateResultsBottomUp(samples, self.groups)
         res = calc_results.calculate_metrics()
         self.wall_time_total = time.time() - self.timer_start
 
-        res['mean'] = mean
-        res['lower'] = lower
-        res['upper'] = upper
         res['wall_time'] = {}
         res['wall_time']['wall_time_preprocess'] = self.wall_time_preprocess
         res['wall_time']['wall_time_build_model'] = self.wall_time_build_model
