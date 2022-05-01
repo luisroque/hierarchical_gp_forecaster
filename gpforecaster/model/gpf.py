@@ -160,7 +160,7 @@ class GPF:
         i = 0
         samples = np.zeros((self.n_samples, self.groups['predict']['n'], self.groups['predict']['s']))
         for pred in predictions:
-            samples[:, :, i] = np.random.normal(pred.mean, np.sqrt(pred.variance),
+            samples[:, :, i] = np.random.normal(pred.mean.detach().numpy(), np.sqrt(pred.variance.detach().numpy()),
                                                 size=(self.n_samples, self.groups['predict']['n']))
             i += 1
 
