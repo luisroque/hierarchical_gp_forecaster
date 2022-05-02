@@ -23,17 +23,17 @@ class TestModel(unittest.TestCase):
 
     def test_predict_shape(self):
         model, like = self.gpf.train(n_iterations=10)
-        mean, lower, upper = self.gpf.predict(model, like)
-        self.assertTrue(mean.shape == (1, self.n, self.s))
+        samples = self.gpf.predict(model, like)
+        self.assertTrue(samples.shape == (500, self.n, self.s))
 
     def test_results_interval(self):
         model, like = self.gpf.train(n_iterations=100)
-        mean, lower, upper = self.gpf.predict(model, like)
-        res = self.gpf.metrics(mean, lower, upper)
+        samples = self.gpf.predict(model, like)
+        res = self.gpf.metrics(samples)
         self.assertLess(res['mase']['bottom'], 2.5)
 
     def test_wall_time(self):
         model, like = self.gpf.train(n_iterations=10)
-        mean, lower, upper = self.gpf.predict(model, like)
-        res = self.gpf.metrics(mean)
+        samples = self.gpf.predict(model, like)
+        res = self.gpf.metrics(samples)
         self.assertLess(res['wall_time']['wall_time_total'], 100)

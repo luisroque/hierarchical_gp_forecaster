@@ -117,11 +117,13 @@ class CalculateResultsBottomUp(CalculateResultsBase):
         all the information regarding the different groups
     """
 
-    def __init__(self, pred_samples, groups):
+    def __init__(self, pred_samples, groups, store_prediction_samples, store_prediction_points):
         super().__init__(groups=groups)
         self.pred_mean = np.mean(pred_samples, axis=2).reshape(self.n, self.s)[self.n - self.h:self.n, :]
         self.pred_mean_complete = np.mean(pred_samples, axis=2).reshape(self.n, self.s)
         self.pred_samples = pred_samples
+        self.store_prediction_samples = store_prediction_samples
+        self.store_prediction_points = store_prediction_points
 
     def compute_error_for_every_group(self, error_metrics):
         """Computes the error metrics for all the groups
@@ -143,16 +145,17 @@ class CalculateResultsBottomUp(CalculateResultsBase):
                 y_g[:, idx] = np.sum(idx_dict_new[name] * self.y_f, axis=1)
                 f_g[:, idx] = np.sum(idx_dict_new[name] * self.pred_mean, axis=1)
                 s_g[:, idx, :] = np.sum(idx_dict_new[name][:, :, np.newaxis] * self.pred_samples, axis=1)
-                error_metrics['predictions'][name] = f_g[:, idx]
-                error_metrics['predictions']['samples'][name] = s_g[:, idx, :]
+                if self.store_prediction_points:
+                    error_metrics['predictions']['points'][name] = f_g[:, idx]
+                if self.store_prediction_samples:
+                    error_metrics['predictions']['samples'][name] = s_g[:, idx, :]
 
             error_metrics = self.calculate_metrics_for_individual_group(group,
                                                                         y_g,
                                                                         f_g,
                                                                         error_metrics,
                                                                         predictions_sample=s_g)
-            error_metrics['predictions'][group] = np.sum(f_g, axis=1)
-            error_metrics['predictions']['samples'][group] = np.sum(s_g, axis=1)
+
         return error_metrics
 
     def bottom_up(self, level, error_metrics):
@@ -168,8 +171,10 @@ class CalculateResultsBottomUp(CalculateResultsBase):
                                                                         self.pred_mean,
                                                                         error_metrics,
                                                                         predictions_sample=self.pred_samples)
-            error_metrics['predictions']['bottom'] = self.pred_mean
-            error_metrics['predictions']['samples']['bottom'] = self.pred_samples
+            if self.store_prediction_points:
+                error_metrics['predictions']['points']['bottom'] = self.pred_mean
+            if self.store_prediction_samples:
+                error_metrics['predictions']['samples']['bottom'] = self.pred_samples
         elif level == 'total':
             error_metrics = self.calculate_metrics_for_individual_group(level,
                                                                         np.sum(self.y_f, axis=1).reshape(-1, 1),
@@ -179,8 +184,10 @@ class CalculateResultsBottomUp(CalculateResultsBase):
                                                                                                   axis=1)
                                                                         .reshape((self.n, 1, -1)))
 
-            error_metrics['predictions']['total'] = np.sum(self.pred_mean, axis=1).reshape(-1, 1)
-            error_metrics['predictions']['samples']['total'] = np.sum(self.pred_samples, axis=2)
+            if self.store_prediction_points:
+                error_metrics['predictions']['points']['total'] = np.sum(self.pred_mean, axis=1).reshape(-1, 1)
+            if self.store_prediction_samples:
+                error_metrics['predictions']['samples']['total'] = np.sum(self.pred_samples, axis=1)
         elif level == 'groups':
             self.compute_error_for_every_group(error_metrics)
 
@@ -198,8 +205,12 @@ class CalculateResultsBottomUp(CalculateResultsBase):
         error_metrics['mase'] = {}
         error_metrics['rmse'] = {}
         error_metrics['CRPS'] = {}
-        error_metrics['predictions'] = {}
-        error_metrics['predictions']['samples'] = {}
+        if self.store_prediction_points or self.store_prediction_samples:
+            error_metrics['predictions'] = {}
+        if self.store_prediction_points:
+            error_metrics['predictions']['points'] = {}
+        if self.store_prediction_samples:
+            error_metrics['predictions']['samples'] = {}
 
         error_metrics = self.bottom_up('bottom', error_metrics)
         error_metrics = self.bottom_up('total', error_metrics)
@@ -207,9 +218,8 @@ class CalculateResultsBottomUp(CalculateResultsBase):
 
         # Aggregate all errors and create the 'all' category
         for err in self.errs:
-            error_metrics[err]['all_ind'] = np.concatenate([error_metrics[err][f'{x}_ind'].reshape((-1, 1)) for x in
-                                                            self.levels],
-                                                           0)
+            error_metrics[err]['all_ind'] = np.squeeze(np.concatenate([error_metrics[err][f'{x}_ind'].reshape((-1, 1))
+                                                                       for x in self.levels], 0))
             error_metrics[err]['all'] = np.mean(error_metrics[err]['all_ind'])
 
         return error_metrics

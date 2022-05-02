@@ -13,7 +13,9 @@ import time
 
 class GPF:
 
-    def __init__(self, dataset, groups, input_dir='./', n_samples=500):
+    def __init__(self, dataset, groups, input_dir='./', n_samples=500,
+                 store_prediction_samples=False,
+                 store_prediction_points=False):
         self.dataset = dataset
         self.groups = groups
         self.input_dir = input_dir
@@ -26,6 +28,8 @@ class GPF:
         self.groups, self.dt = self._preprocess()
         self._create_directories()
         self.n_samples = n_samples
+        self.store_prediction_samples = store_prediction_samples
+        self.store_prediction_points = store_prediction_points
 
         self.train_x = torch.arange(groups['train']['n'])
         self.train_x = self.train_x.type(torch.DoubleTensor)
@@ -181,7 +185,10 @@ class GPF:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
     def metrics(self, samples):
-        calc_results = CalculateResultsBottomUp(samples, self.groups)
+        calc_results = CalculateResultsBottomUp(samples,
+                                                self.groups,
+                                                self.store_prediction_samples,
+                                                self.store_prediction_points)
         res = calc_results.calculate_metrics()
         self.wall_time_total = time.time() - self.timer_start
 
