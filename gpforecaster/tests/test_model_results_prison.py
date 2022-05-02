@@ -13,10 +13,6 @@ class TestModel(unittest.TestCase):
         shutil.rmtree("./data/original_datasets")
         self.gpf = GPF('prison', self.data)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree("./results")
-
     def test_correct_train(self):
         model, like = self.gpf.train(n_iterations=10)
         self.assertIsNotNone(model)
@@ -24,7 +20,7 @@ class TestModel(unittest.TestCase):
     def test_predict_shape(self):
         model, like = self.gpf.train(n_iterations=10)
         samples = self.gpf.predict(model, like)
-        self.assertTrue(samples.shape == (500, self.n, self.s))
+        self.assertTrue(samples.shape == (self.n, self.s, 500))
 
     def test_results_interval(self):
         model, like = self.gpf.train(n_iterations=100)

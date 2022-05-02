@@ -13,10 +13,6 @@ class TestModel(unittest.TestCase):
         shutil.rmtree("./data/original_datasets")
         self.gpf = GPF('prison', self.data)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree("./results")
-
     def test_calculate_metrics_dict(self):
         model, like = self.gpf.train(n_iterations=100)
         samples = self.gpf.predict(model, like)

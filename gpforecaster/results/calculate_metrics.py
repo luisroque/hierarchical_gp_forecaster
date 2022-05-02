@@ -185,7 +185,7 @@ class CalculateResultsBottomUp(CalculateResultsBase):
                                                                         .reshape((self.n, 1, -1)))
 
             if self.store_prediction_points:
-                error_metrics['predictions']['points']['total'] = np.sum(self.pred_mean, axis=1).reshape(-1, 1)
+                error_metrics['predictions']['points']['total'] = np.sum(self.pred_mean, axis=1)
             if self.store_prediction_samples:
                 error_metrics['predictions']['samples']['total'] = np.sum(self.pred_samples, axis=1)
         elif level == 'groups':

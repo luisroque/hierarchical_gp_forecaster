@@ -15,10 +15,6 @@ class TestModel(unittest.TestCase):
                        store_prediction_samples=True,
                        store_prediction_points=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree("./results")
-
     def test_results_mean_and_prediction_interval(self):
         model, like = self.gpf.train(n_iterations=10)
         samples = self.gpf.predict(model, like)
